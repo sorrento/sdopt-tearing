@@ -34,6 +34,7 @@ class Equation:
         # Modelica cannot give a unique ID for the equations, we generate one
         self.id = None
 
+
 def gen_nonnesting_eqs(equations):
     return (eq for eq in equations if eq.kind != Equation.NESTING)
 
@@ -228,11 +229,11 @@ def true_name(name, in_aliases, out_aliases):
     return name
 
 def walk_alias_chain(aliases, parent):
-    children = aliases.edge[parent]
+    children = aliases.adj[parent]
     while children:          
         assert len(children)==1, (parent, children)
         (parent,) = children
-        children = aliases.edge[parent]
+        children = aliases.adj[parent]
     return parent
 
 ################################################################################
@@ -340,11 +341,11 @@ def get_connections_of_atomic_units(raw_connections, mapping):
 
 def initialize_node_and_edge_dict(connections):
     for n in connections:
-        d = connections.node[n]        
+        d = connections._node[n]        
         d['vars'] = set()
         d['eqs']  = [ ]
         # d['weight'] will be assigned to only later, in finalize_nodes
-    for _, _, d in connections.edges_iter(data=True):
+    for _, _, d in connections.edges(data=True):
         d['weight'] = 0
         d['eqs'] = [ ]
 
@@ -353,7 +354,7 @@ def record_all_unit_eqs(connections, equations, parameters):
     for eq in gen_unit_eqs(equations):
         unit = eq.unit
         assert unit in connections, (unit, eq.names)
-        d = connections.node[unit] 
+        d = connections._node[unit] 
         true_vars = set(name for name in eq.names if name not in param_names)
         d['vars'].update(true_vars)
         d['eqs'].append(eq)
@@ -366,12 +367,12 @@ def record_connection_eqs(connections, equations):
         d = connections[src][dst]
         d['weight'] += 1
         d['eqs'].append(eq)
-        connections.node[src]['vars'].add(outlet)
-        connections.node[dst]['vars'].add(inlet)
+        connections._node[src]['vars'].add(outlet)
+        connections._node[dst]['vars'].add(inlet)
 
 def finalize_nodes(connections):
     for n in connections:
-        d = connections.node[n] 
+        d = connections._node[n] 
         d['vars'] = sorted(d['vars'])
         nvars = len(d['vars'])
         neqs  = len(d['eqs'])
@@ -441,12 +442,12 @@ def dbg_bottom_level_alias(aliases, parent):
     if parent not in aliases:          # unaliased connectors are stored only 
         print(parent, '(not aliased)') # in connections
         return parent
-    children = aliases.edge[parent]
+    children = aliases.adj[parent]
     while children:
         print(parent)            
         assert len(children)==1, (parent, children)        
         (parent,) = children
-        children = aliases.edge[parent]
+        children = aliases.adj[parent]
     print(parent)
     return parent
 

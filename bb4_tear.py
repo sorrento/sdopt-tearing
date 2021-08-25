@@ -7,7 +7,8 @@ from __future__ import print_function, division
 from itertools import chain
 from time import time
 from namedlist import namedlist
-from networkx import connected_component_subgraphs
+import networkx as nx
+#from networkx import connected_component_subgraphs
 from matching import maxmatch_len
 from order_util import check_nonincreasing_envelope
 from plot_ordering import to_pdf
@@ -16,6 +17,10 @@ from py3compat import cPickle_loads, cPickle_dumps, cPickle_HIGHEST_PROTOCOL, \
                       irange, izip
 from testmatrices import create_difficult_pattern, create_block_pattern
 from utils import argsort, print_timestamp
+
+def connected_component_subgraphs(G):
+    for c in nx.connected_components(G):
+        yield G.subgraph(c)
 
 
 __all__ = [ 'solve_problem', 'TIME_LIMIT' ]
@@ -46,7 +51,8 @@ def main():
     #res = solve_problem(g, eqs, log)
     #print('ub = {}, explored = {}, optimal = {}, gap = {}'.format(
     #                        res.ub, res.explored, res.optimal, res.gap))
-    n_eqs = 16
+    n_eqs = 20
+
     g = create_difficult_pattern(n_eqs)
     solve(g, n_eqs, solve_problem)
     #
@@ -58,14 +64,16 @@ def solve(g, n_eqs, func):
     print('Solving problem of size', n_eqs)
     msg   = 'Size: ' + str(n_eqs)
     fname = '{0:03d}a'.format(n_eqs)
-    to_pdf(g, list(irange(n_eqs)), irange(n_eqs, 2*n_eqs), msg, fname)
+    #to_pdf(g, list(irange(n_eqs)), irange(n_eqs, 2*n_eqs), msg, fname)
+    to_pdf(g, list(irange(n_eqs)), irange(n_eqs, 2*n_eqs), msg)
     #
     res = func(g, set(irange(n_eqs)))
     #
     print('Explored', res.explored, 'nodes')
     msg   = 'OPT = {}, BT: {}'.format(res.ub, res.explored)
     fname = '{0:03d}b'.format(n_eqs)
-    to_pdf(g, res.rowp, res.colp, msg, fname)
+   # to_pdf(g, res.rowp, res.colp, msg, fname)
+    to_pdf(g, res.rowp, res.colp, msg)
     print_timestamp()
 
 #-------------------------------------------------------------------------------
@@ -572,7 +580,8 @@ def apply_exclusion_rule_on_pieces(stack, start_cost, cost_profiles):
 def is_connected(g):
     assert g
     seen = set()
-    nextlevel = { next(g.nodes_iter()) }
+   
+    nextlevel = g.nodes()
     while nextlevel:
         thislevel = nextlevel
         nextlevel = set()

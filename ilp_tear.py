@@ -90,7 +90,7 @@ def solve_with_pcm(g, eqs, forbidden, use_min_degree):
     #
     variables = sorted(n for n in dag if n not in eqs)
     # all tears are sources, no other variable is source
-    sources = sorted(n for n,indeg in dag.in_degree_iter(variables) if indeg==0)
+    sources = sorted(n for n,indeg in dag.in_degree(variables) if indeg==0)
     rowp, colp, matches, tear_set, sink_set = \
                                  permute_to_hessenberg(g, eqs, forbidden, sources)
     assert ub==len(tear_set), (sorted(sources), sorted(tear_set))
@@ -296,12 +296,12 @@ def orient_wrt_matching(g_orig, eqs, relax_matching, lb):
     dig = nx.DiGraph()
     dig.add_nodes_from(g_orig)
     matched_edges = { eq_var for eq_var in relax_matching }
-    for eq_var in g_orig.edges_iter(eqs):
+    for eq_var in g_orig.edges(eqs):
         u, v = eq_var if eq_var in matched_edges else (eq_var[1], eq_var[0])
         dig.add_edge(u, v)
     variables = sorted(n for n in g_orig if n not in eqs)
     # all tears are sources, no other variable is source
-    sources = sorted(n for n,indeg in dig.in_degree_iter(variables) if indeg==0)
+    sources = sorted(n for n,indeg in dig.in_degree(variables) if indeg==0)
     assert len(variables) == len(sources) + len(relax_matching)
     assert lb == len(sources)
     return dig
@@ -314,7 +314,7 @@ def matching_to_dag(g_orig, eqs, forbidden, rowp, colp, matches, tears, sinks):
     dag = nx.DiGraph()
     dag.add_nodes_from(rowp) # Empty (isolated) equations are allowed
     #dag.add_nodes_from(variables)
-    for eq_var in g_orig.edges_iter(rowp):
+    for eq_var in g_orig.edges(rowp):
         u, v = eq_var if eq_var in matched_edges else (eq_var[1], eq_var[0])
         dag.add_edge(u, v)
         matched_edges.discard(eq_var)
@@ -362,7 +362,7 @@ def digraph_to_dag(dig, eqs, tears, lb):
             dig.add_edge(v, e)
     # all tears are sources, no other variable is source
     variables = sorted(n for n in dig if n not in eqs)
-    sources = sorted(n for n,indeg in dig.in_degree_iter(variables) if indeg==0)
+    sources = sorted(n for n,indeg in dig.in_degree(variables) if indeg==0)
     # double-check the upper bound:
     assert len(sources)==len(tears)+lb
 
@@ -371,9 +371,9 @@ def get_solution(dag, eqs, forbidden):
     equations = sorted(eqs)
     variables = sorted(n for n in dag if n not in eqs)
     # all tears are sources, no other variable is source
-    sources = sorted(n for n,indeg in dag.in_degree_iter(variables) if indeg==0)
+    sources = sorted(n for n,indeg in dag.in_degree(variables) if indeg==0)
     # all residuals are sinks, no other equation is sink
-    sinks   = sorted(n for n, out in dag.out_degree_iter(equations) if out==0)
+    sinks   = sorted(n for n, out in dag.out_degree(equations) if out==0)
     # do a topological sort;  
     # nbunch tries to break ties by ordering the equations alphabetically.
     nbunch = list(reversed(equations))
@@ -476,7 +476,7 @@ def build_small_loops(g, eqs, forbidden):
     # Build small loops around each edge
     start = time()
     initial_loops = set()
-    for eq,var in g.edges_iter(eqs):
+    for eq,var in g.edges(eqs):
         if (eq,var) in forbidden:
             continue
         g.remove_edge(eq,var)

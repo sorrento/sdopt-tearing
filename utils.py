@@ -42,7 +42,7 @@ def print_timestamp():
 
 #-------------------------------------------------------------------------------
 
-DATADIR = 'data'+os.sep
+DATADIR = 'tearing/data/'
 
 def serialize(obj, filename):
     with gzip.open(filename, 'wb') as f:

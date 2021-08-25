@@ -72,7 +72,7 @@ def add_py_preamble(lines, alltears, pyname_map):
     lines.append('')
 
 def add_py_postamble(lines, allresids, pyname_map):
-    residuals = ', '.join('r_%d' % eq.id for eq in allresids)
+    residuals = ', '.join('r_%s' % eq.id for eq in allresids)
     lines.append('residuals = [{}]'.format(residuals))
     lines.append('print residuals')
 
@@ -109,7 +109,7 @@ def add_equations(lines, blocks, pyname_map, end_of_stmt=''):
                 eq_str = eq.symbolic_form + ' = 0'
                 # E.g. v30-(v33*v36) = 0 but with Modelica names
             else:             # Python
-                eq_str = ('r_%d = ' % eq.id) + eq.symbolic_form
+                eq_str = ('r_%s = ' % eq.id) + str(eq.symbolic_form)
                 # E.g. r_27 = v30-(v33*v36) but with Modelica names
             # Now replace Modelica names, and move the original eq to comment
             code = replace_names(eq_str, eq.names, pyname_map, end_of_stmt)

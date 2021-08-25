@@ -17,6 +17,7 @@ from py3compat import irange
 from order_util import colp_to_spiked_form, get_hessenberg_order, check_spiked_form,\
                        coo_matrix_to_bipartite, partial_relabel, argsort, \
                        get_inverse_perm, get_row_weights
+from plot_ordering import plot_hessenberg, plot_bipartite
 
 
 def hessenberg(rows, cols, values, n_rows, n_cols, tie_breaking):
@@ -58,18 +59,21 @@ def to_spiked_form(g, eqs, forbidden=None):
     [column permutation], [spike variables], [residual equations]. The spikes 
     and the residuals are ordered according to the permutation.'''
     # Check singularity, apparently only the permutation to spiked form needs it
-    assert 2*len(eqs) == len(g),  'Not a square matrix!'
+    #assert 2*len(eqs) == len(g),  'Not a square matrix!'
     matches = max_weight_matching(g)
-    if len(matches) != 2*len(eqs):
-        return (True, [], [], [], [])
+    print(len(matches))
+    #if len(matches) != 2*len(eqs):
+    #    return (True, [], [], [], [])
     if forbidden is None:
         forbidden = set()
     rowp, colp_hess, matches, tear_set, sink_set = min_degree(g, eqs, forbidden)
+    
+    print('ok')
     colp = colp_to_spiked_form(rowp, colp_hess, matches, tear_set, sink_set)
-    check_spiked_form(g, rowp, colp, tear_set)
-    #from plot_ordering import plot_hessenberg, plot_bipartite
-    #plot_hessenberg(g, rowp, colp_hess, [], '')
-    #plot_bipartite(g, forbidden, rowp, colp)
+    #check_spiked_form(g, rowp, colp, tear_set)
+    
+    plot_hessenberg(g, rowp, colp_hess, [], '')
+    plot_bipartite(g, forbidden, rowp, colp)
     tears = [c for c in colp if c in tear_set]
     sinks = [r for r in rowp if r in sink_set]
     return (False, rowp, colp, tears, sinks)
@@ -80,10 +84,14 @@ def to_hessenberg_form(g, eqs, forbidden=None):
     [guessed variables], [residual equations], [row matches], [col matches]. 
     Everything is ordered according to the permutation.'''
     rowp, colp, matches, tear_set, sink_set = min_degree(g, eqs, forbidden)
+  
     tears = [c for c in colp if c in tear_set]
     sinks = [r for r in rowp if r in sink_set]
     row_matches = [r for r in rowp if r in matches]
     col_matches = [c for c in colp if c in matches]
+    
+    #plot_hessenberg(g, rowp, colp, [], '')
+    #plot_bipartite(g, forbidden, rowp, colp)
     return (rowp, colp, tears, sinks, row_matches, col_matches)
 
 
@@ -150,8 +158,9 @@ def setup_graphs(g_orig, forbidden):
     g_allowed = cPickle_loads(g_pkl)
     adj = g_allowed.adj
     for u, v in forbidden:
-        del adj[u][v]
-        del adj[v][u] # assumes no self loops    
+        g_allowed.remove_edge(u,v) 
+        #del adj[u][v]
+        #del adj[v][u] # assumes no self loops    
     return g_allowed, g
 
 
@@ -167,9 +176,15 @@ def create_heap(g_allowed, g, eqs):
 def run_tests():
     from test_tearing import gen_testproblems
     for g, eqs, forbidden in gen_testproblems():
-        _, _, tears, sinks, _, _ = to_hessenberg_form(g, eqs, forbidden)
+        rowp, colp, tears, sinks, mr, mc = to_hessenberg_form(g, eqs, forbidden)
+        
+        
+        print('Rowp:', rowp)
+        print('Colp:', colp)
         print('Tears:', tears)
         print('Residuals:', sinks)
+        print('mr:', mr)
+        print('mc:', mc)
 
 
 if __name__=='__main__':

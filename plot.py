@@ -7,7 +7,10 @@ def dummy(_, prog=None): pass
 
 def plot(directed_graph, prog='dot'):
     from matplotlib import pyplot as plt
-    from networkx import graphviz_layout, draw_networkx
+    from networkx import draw_networkx
+    import networkx as nx
+    # graphviz_layout bug: http://stackoverflow.com/a/35280794/341970
+    from networkx.drawing.nx_agraph import graphviz_layout
     positions = graphviz_layout(directed_graph, prog)
     draw_networkx(directed_graph, pos=positions, node_size=800)
     mng = plt.get_current_fig_manager()

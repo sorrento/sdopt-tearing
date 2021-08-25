@@ -105,7 +105,7 @@ def check_safety(py_eq, to_ampl, varname_bnds):
 
 def replace_params(orig_tree, params):
     g = deepcopy(orig_tree)
-    param_dicts = ( d for n,d in g.nodes_iter(data=True)
+    param_dicts = ( d for n,d in g.nodes(data=True)
                        if d['kind']==ntype.VAR and d['value'] in params )
     for d in param_dicts:
         name = d['value']
@@ -135,9 +135,9 @@ def to_sympy_expression_tree(expr_tree):
 def recurse(dag, n):
     # Assumption: the node id order corresponds to the children order because 
     # the expression tree was constructed that way
-    args = sorted(dag.edge[n])
+    args = sorted(dag.adj[n])
     nargs = len(args)
-    d = dag.node[n]
+    d = dag._node[n]
     kind = d['kind']
     if   nargs == 0:
         return leaf_node(kind, d['value'])

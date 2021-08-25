@@ -64,7 +64,7 @@ def add_leaf(dag, kind, e):
         value = get_full_name(e)
     else:
         raise AssertionError(kind)
-    dag.node[my_id]['value'] = value
+    dag._node[my_id]['value'] = value
     return my_id
 
 NODE_BUILDER = { 'Add' : (add_binary, ntype.ADD),
@@ -88,10 +88,10 @@ def add_recursively(dag, e):
 
 def gen_var_node_dicts(expression_tree):
     g = expression_tree
-    return (d for _, d in g.nodes_iter(data=True) if d['kind']==ntype.VAR)
+    return (d for _, d in g.nodes(data=True) if d['kind']==ntype.VAR)
 
 def get_varnames(g):
-    var_name_gen = ( d['value'] for _, d in g.nodes_iter(data=True) 
+    var_name_gen = ( d['value'] for _, d in g.nodes(data=True) 
                                  if d['kind']==ntype.VAR )
     return sorted(set(var_name_gen)) 
 
@@ -106,9 +106,9 @@ def to_symbolic_form(dag):
 def infix(dag, n):
     # Assumption: the node id order corresponds to the children order because 
     # the expression tree was constructed that way
-    args = sorted(dag.edge[n])
+    args = sorted(dag.adj[n])
     nargs = len(args)
-    d = dag.node[n]
+    d = dag._node[n]
     kind = d['kind']
     if   nargs == 0:
         return leaf_printer(kind, d['value'])
@@ -159,9 +159,9 @@ def cleanup_a_bit(symb):
 def defines_var_alias(expression_tree):
     # v1 - v2 = 0 
     if len(expression_tree)==3:
-        arg1_t = expression_tree.node[1]['kind']
-        arg2_t = expression_tree.node[2]['kind']
-        op_t   = expression_tree.node[3]['kind']
+        arg1_t = expression_tree._node[1]['kind']
+        arg2_t = expression_tree._node[2]['kind']
+        op_t   = expression_tree._node[3]['kind']
         if arg1_t==ntype.VAR and arg2_t==ntype.VAR and op_t==ntype.SUB:
             return True
     return False
@@ -169,13 +169,13 @@ def defines_var_alias(expression_tree):
 def rearrange_if_assignment(expression_tree):
     # v42 - expression = 0  OR  expression - v42 = 0  ->  v42 = expression
     root_id   = len(expression_tree)
-    root_node = expression_tree.node[root_id]
-    children  = sorted(expression_tree.edge[root_id])
+    root_node = expression_tree._node[root_id]
+    children  = sorted(expression_tree.adj[root_id])
     if len(children) != 2 or root_node['kind'] != ntype.SUB:
         return
     left_id, right_id = children
-    left_child  = expression_tree.node[left_id]
-    right_child = expression_tree.node[right_id]  
+    left_child  = expression_tree._node[left_id]
+    right_child = expression_tree._node[right_id]  
     if left_child['kind'] != ntype.VAR and right_child['kind'] != ntype.VAR:
         return
     if left_child['kind'] != ntype.VAR:
@@ -198,22 +198,22 @@ def fold_constants(expr_tree):
     if len(tree)==len(expr_tree):
         return expr_tree
     # Undo str -> float conversion on numbers
-    for n, d in tree.nodes_iter(data=True):
+    for n, d in tree.nodes(data=True):
         if d['kind'] == ntype.NUM:
             d['value'] = str(d['value'])
     # Relabel nodes to restore invariant: node ids are 1..n in post-order
     return convert_node_labels_to_integers(tree, 1, 'sorted')
 
 def fold_if_possible(tree, n):
-    children = sorted(tree.edge[n])
+    children = sorted(tree.adj[n])
     if not children:
         return
-    all_number = all(tree.node[child]['kind']==ntype.NUM for child in children)
+    all_number = all(tree._node[child]['kind']==ntype.NUM for child in children)
     if not all_number:
         return
-    d = tree.node[n]
+    d = tree._node[n]
     op =  NTYPE_OP_TO_PY[d['kind']]
-    args = [ float(tree.node[child]['value']) for child in children ]
+    args = [ float(tree._node[child]['value']) for child in children ]
     d['value'] = op(*args)
     d['kind']  = ntype.NUM
     tree.remove_nodes_from(children)
@@ -239,7 +239,7 @@ def get_linear_vars(tree):
 def collect_varnode_occurances(tree):
     # Returns { Modelica name : [ node IDs] }
     occurances = { }
-    for n, d in tree.nodes_iter(data=True):
+    for n, d in tree.nodes(data=True):
         if d['kind'] == ntype.VAR:
             occurances.setdefault(d['value'], [ ]).append(n)
     return occurances    
@@ -261,17 +261,17 @@ def path_to_root(tree, n):
     return path
 
 def is_parent_linear(tree, child, parent):
-    kind = tree.node[parent]['kind'] 
+    kind = tree._node[parent]['kind'] 
     if kind==ntype.ADD or kind==ntype.SUB:
         return True
     if kind==ntype.MUL:
         sibling = get_sibling(tree, child, parent)
-        return tree.node[sibling]['kind'] == ntype.NUM
+        return tree._node[sibling]['kind'] == ntype.NUM
     if kind==ntype.DIV:
-        left, right = sorted(tree.edge[parent])
-        return child==left and tree.node[right]['kind'] == ntype.NUM
+        left, right = sorted(tree.adj[parent])
+        return child==left and tree._node[right]['kind'] == ntype.NUM
     return False
 
 def get_sibling(tree, child, parent):
-    left, right = sorted(tree.edge[parent])
+    left, right = sorted(tree.adj[parent])
     return left if left!=child else right

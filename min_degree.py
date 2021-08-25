@@ -7,7 +7,7 @@ from copy import deepcopy
 import six
 from networkx import DiGraph
 from order_util import deterministic_topological_sort
-from tearing import BLACK, RED, BLUE, initialize_edges, paint_edges_BLUE, \
+from tearing_ import BLACK, RED, BLUE, initialize_edges, paint_edges_BLUE, \
                     itr_nodes_with_only_forbidden_black_edges, \
                     itr_one_black_edge_which_is_allowed, itr_black_edges, \
                     itr_nodes_with_only_blue_edges
